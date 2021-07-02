@@ -12,60 +12,81 @@ roughness, which specifies the magnitude of the random components added in the d
 import random as rd
 from matplotlib import pyplot as plt
 import numpy as np
+import math as mt
+from tqdm import tqdm
 
 
-def diamondSquare(seed, iterations, roughness):
-    if iterations == 0:
-        return seed
-
-    r_factor = iterations * roughness
-
-    diamondPoint = np.sum(seed) / 4 + rd.random() * r_factor
-
-    northPoint = np.average((seed[0][0], seed[0][1], diamondPoint)) + rd.random() * r_factor
-    westPoint = np.average((seed[0][0], seed[1][0], diamondPoint)) + rd.random() * r_factor
-    eastPoint = np.average((seed[0][1], seed[1][1], diamondPoint)) + rd.random() * r_factor
-    southPoint = np.average((seed[1][0], seed[1][1], diamondPoint)) + rd.random() * r_factor
-
-    seed00 = np.array([[seed[0][0], northPoint],
-                       [eastPoint, diamondPoint]])
-
-    seed01 = np.array([[northPoint, seed[0][1]],
-                       [diamondPoint, eastPoint]])
-
-    seed10 = np.array([[westPoint, diamondPoint],
-                       [seed[1][0], southPoint]])
-
-    seed11 = np.array([[diamondPoint, eastPoint],
-                       [southPoint, seed[1][1]]])
-
-    sq00 = diamondSquare(seed00, iterations - 1, roughness)
-    sq01 = diamondSquare(seed01, iterations - 1, roughness)
-    sq10 = diamondSquare(seed10, iterations - 1, roughness)
-    sq11 = diamondSquare(seed11, iterations - 1, roughness)
-
-    sideLength = len(sq00)
-
-    data = np.zeros((2 * sideLength, 2 * sideLength))
-
-    data[:sideLength, :sideLength] = sq00
-    data[:sideLength, sideLength:] = sq01
-
-    data[sideLength:, :sideLength] = sq10
-    data[sideLength:, sideLength:] = sq11
-
-    return data
+def okAccess(value, maxValue):
+    return min(maxValue, max(value, 0))
 
 
 def getDiamondSquareData(seed, iterations, roughness):
-    seed = np.array([[seed, seed],
-                     [seed, seed]])
+    iterations = min(iterations, 10)
+    length = int(mt.pow(2, iterations) + 1)
+    lastIndex = length - 1
+    data = np.zeros((length, length))
 
-    return diamondSquare(seed, iterations=iterations, roughness=roughness)
+    data[0, 0] = seed*rd.random()
+    data[0, lastIndex] = seed*rd.random()
+    data[lastIndex, 0] = seed*rd.random()
+    data[lastIndex, lastIndex] = seed*rd.random()
+    stepIndex = length - 1
+    subStepIndex = stepIndex // 2
+
+    for ITER in tqdm(range(iterations)):
+
+        sideSquare = int(mt.pow(2, ITER))
+        rFactor = roughness / (ITER + 1)
+
+        # Create diamond step
+        for i in range(sideSquare):
+            i = i * stepIndex
+            for j in range(sideSquare):
+                j = j * stepIndex
+
+                vertx00 = data[i][j]
+                vertx01 = data[i][j + stepIndex]
+
+                vertx10 = data[i + stepIndex][j]
+                vertx11 = data[i + stepIndex][j + stepIndex]
+                data[i + subStepIndex][j + subStepIndex] = (vertx00 + vertx01 + vertx10 + vertx11) / 4 + rd.random() * rFactor
+
+        # Square step
+
+        nSquareIterRange = int(mt.ceil(length / subStepIndex))
+
+        start = 1
+
+        for i in range(nSquareIterRange):
+
+            startPos = start * subStepIndex
+            y = i * subStepIndex
+
+            for j in range(startPos, lastIndex+1, stepIndex):
+                x = j
+
+                vertexCord = ((y - subStepIndex, x),
+                              (y, x + subStepIndex),
+                              (y + subStepIndex, x),
+                              (y, x - subStepIndex))
+
+                vertexData = (data[okAccess(cord[0], lastIndex)][okAccess(cord[1], lastIndex)] for cord in vertexCord)
+
+                squareValue = (sum(vertexData)/4) + rd.random() * rFactor
+                data[y][x] = squareValue
+
+            start = (start + 1) % 2
+
+        stepIndex = subStepIndex
+        subStepIndex = stepIndex // 2
+
+    plt.imshow(data)
+    plt.show()
+    return data
 
 
 if __name__ == '__main__':
-    test = getDiamondSquareData(23, 2, 0.05)
+    test = getDiamondSquareData(10, 12, 20)
 
     plt.imshow(test)
     plt.show()
