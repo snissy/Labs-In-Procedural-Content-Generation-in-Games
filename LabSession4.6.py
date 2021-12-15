@@ -21,6 +21,7 @@ def okAccess(value, maxValue):
 
 
 def getDiamondSquareData(seed, iterations, roughness):
+
     iterations = min(iterations, 10)
     length = int(mt.pow(2, iterations) + 1)
     lastIndex = length - 1
@@ -39,7 +40,7 @@ def getDiamondSquareData(seed, iterations, roughness):
         rFactor = roughness / (ITER + 1)
 
         # Create diamond step
-        for i in range(sideSquare):
+        for i in tqdm(range(sideSquare), leave=False):
             i = i * stepIndex
             for j in range(sideSquare):
                 j = j * stepIndex
@@ -57,7 +58,7 @@ def getDiamondSquareData(seed, iterations, roughness):
 
         start = 1
 
-        for i in range(nSquareIterRange):
+        for i in tqdm(range(nSquareIterRange), leave=False):
 
             startPos = start * subStepIndex
             y = i * subStepIndex
@@ -80,13 +81,15 @@ def getDiamondSquareData(seed, iterations, roughness):
         stepIndex = subStepIndex
         subStepIndex = stepIndex // 2
 
-    plt.imshow(data)
-    plt.show()
+        plt.imshow(data)
+        plt.show()
+        plt.savefig("output_IMG/ITER-{}".format(ITER))
+
     return data
 
 
 if __name__ == '__main__':
-    test = getDiamondSquareData(10, 12, 20)
+    test = getDiamondSquareData(5, 7, 20)
 
     plt.imshow(test)
     plt.show()
